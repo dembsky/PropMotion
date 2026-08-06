@@ -8,12 +8,14 @@ Make one 3D object perform in your SwiftUI app.
 ![Platform](https://img.shields.io/badge/platform-iOS-blue)
 ![Version](https://img.shields.io/badge/version-1.6.2-green)
 
-https://github.com/dembsky/PropMotion/raw/main/media/skill-demo.mp4
+<p align="center">
+  <img src="media/skill-demo.gif" width="360" alt="PropMotion demo reel" />
+</p>
 
 Four actors, one continuous take, everything built and animated with the
 skill's recipes: roll-in entrances, an interactive grab-and-throw, a
-burnout with particle smoke, and a loaded rack going down. Click the frame
-to watch (26 s).
+burnout with particle smoke, and a loaded rack going down.
+[Full-quality video](media/skill-demo.mp4) (26 s).
 
 You have a SwiftUI app and one 3D object that has to look expensive: a
 product, a badge, a coin, a wheel. This skill teaches an agent to build the
