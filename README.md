@@ -84,7 +84,13 @@ worse on screen.
 
 ## Install
 
-Claude Code: copy the `scenekit-product-stages` folder into
+The quick way, from your project directory:
+
+```sh
+npx skills add dembsky/PropMotion
+```
+
+Or by hand for Claude Code: copy the `scenekit-product-stages` folder into
 `~/.claude/skills/`, so the file lands at
 `~/.claude/skills/scenekit-product-stages/SKILL.md`. That folder is the
 skill; everything else in this repo is for you, not the agent.
