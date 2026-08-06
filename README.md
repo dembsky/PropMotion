@@ -40,6 +40,31 @@ written for an agent.
 All geometry from primitives in code, all motion baked keyframes with
 hand-rolled physics. No Unity, no Blender, no assets to license.
 
+## How to work with it
+
+Two different problems, two different inputs. This is how the clip above
+was actually made.
+
+**Shape: show photos.** The dumbbell started as two photos of two
+different dumbbells, from two angles. Same for the plate and the tire.
+An agent reads proportions off a reference far better than off
+adjectives: "a rubber dumbbell with a steel grip" gets you a generic
+guess, a photo gets you the thing in the photo. Two shots from different
+angles is enough; the skill makes the agent take real-world measurements
+off them before modeling anything.
+
+**Motion: write the script.** The barbell scene got no pictures at all.
+Just a precise description of what happens and when: rolls in from the
+bottom, racks itself, plates slam on one by one, and at the end the whole
+rack tips over backward. The skill turns a description like that into a
+cue sheet before any code gets written, so the tighter your sequence, the
+closer the first take.
+
+**Iterate on what you see.** A screenshot of what's wrong beats a
+paragraph about what's wrong. And when motion feels off and you can't say
+why, ask the agent to draw the path as a red line on the floor. One look
+usually settles whether the problem is the trajectory or the staging.
+
 ## What's inside
 
 One SKILL.md the agent reads first, and ten reference files it pulls in
