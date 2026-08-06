@@ -12,18 +12,33 @@ A Claude Code skill for making 3D objects move well in SwiftUI apps.
   <img src="media/skill-demo.gif" width="360" alt="PropMotion demo reel" />
 </p>
 
-## Why this exists
+## What it's for
 
-I build Gymscle, a gym tracker with small 3D moments in it. Getting SceneKit to do this kind of work is mostly undocumented. The
-docs tell you what an SCNNode is. They don't tell you that deferred shadows
-silently break under MSAA. That a square environment map gets ignored
-without a single log line and your chrome renders black. That the first
-frame of every fresh SCNView compiles Metal shaders right in the middle of
-your entrance animation.
+Sometimes an app needs one 3D moment. A product spinning on a pedestal. An
+achievement badge that rolls in and thuds. A coin that drops when the user
+hits a goal. Not a game, not AR. One object that moves well.
 
-I learned all of it the slow way, correcting the agent session after
-session. At some point writing the corrections down became cheaper than
-repeating them. This repo is that document.
+SceneKit does all of this and sits in any SwiftUI layout, but the knowledge
+of how is scattered and half of it is undocumented. The docs tell you what
+an SCNNode is. They don't tell you that deferred shadows silently break
+under MSAA, or that the first frame of a fresh SCNView compiles shaders in
+the middle of your entrance animation. This skill is the missing manual,
+written for an agent.
+
+## What you can make with it
+
+- an object that rolls onto the screen, settles, and casts a real shadow
+  over your plain SwiftUI background
+- grab it, throw it, it bounces off the edges; every impact taps the
+  haptic engine
+- weight you can see: heavy things rise slow, fall fast, land with a thud
+  and a shiver
+- coins raining into a pile, marbles colliding, a wheel doing a burnout
+  with smoke
+- several scenes cut into one continuous clip, like the one above
+
+All geometry from primitives in code, all motion baked keyframes with
+hand-rolled physics. No Unity, no Blender, no assets to license.
 
 ## What's inside
 
