@@ -1,6 +1,6 @@
 # PropMotion
 
-Make one 3D object perform in your SwiftUI app.
+A Claude Code skill for making 3D objects move well in SwiftUI apps.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-agent%20skill-d97757)
@@ -12,53 +12,54 @@ Make one 3D object perform in your SwiftUI app.
   <img src="media/skill-demo.gif" width="360" alt="PropMotion demo reel" />
 </p>
 
-Four actors, one continuous take, everything built and animated with the
-skill's recipes: roll-in entrances, an interactive grab-and-throw, a
-burnout with particle smoke, and a loaded rack going down.
-[Full-quality video](media/skill-demo.mp4) (26 s).
+## Why this exists
 
-You have a SwiftUI app and one 3D object that has to look expensive: a
-product, a badge, a coin, a wheel. This skill teaches an agent to build the
-whole scene around it in SceneKit: a transparent stage composited over your
-layout, studio lighting with a real shadow, an entrance that rolls in with
-correct physics, drag and throw that feels heavy, haptics on every impact.
+I build Gymscle, a gym tracker with small 3D moments in it. Getting SceneKit to do this kind of work is mostly undocumented. The
+docs tell you what an SCNNode is. They don't tell you that deferred shadows
+silently break under MSAA. That a square environment map gets ignored
+without a single log line and your chrome renders black. That the first
+frame of every fresh SCNView compiles Metal shaders right in the middle of
+your entrance animation.
 
-No game engine, no 3D artist, no asset files. Geometry is built from
-primitives in code, and every animation is baked keyframes driven by a
-small hand-rolled integrator, so motion is deterministic, interruptible,
-and cheap. The references also cover the parts that normally cost days of
-trial and error: shadows that silently refuse to render, metal that draws
-black, the first-frame shader hitch, SwiftUI remounts that replay
-entrances, and cutting several scenes into one continuous sequence.
+I learned all of it the slow way, correcting the agent session after
+session. At some point writing the corrections down became cheaper than
+repeating them. This repo is that document.
 
-The skill package itself is named `scenekit-product-stages` (the install
-id); PropMotion is the name on the poster.
+## What's inside
 
-## Repository layout
+One SKILL.md the agent reads first, and ten reference files it pulls in
+when the task calls for them. Roughly:
 
-- `scenekit-product-stages/` is the skill itself (SKILL.md plus
-  references/). This is the only folder you install or upload.
-- `README.md`, `evals.md`, and `LICENSE` are repository-level material for
-  human readers and are not part of the skill package.
+- how a stage is built. Transparent SCNView over your SwiftUI layout,
+  a camera that behaves, three lights and a separate shadow rig
+- how motion is designed. Cue sheets before code, baked keyframes instead
+  of timers, a tiny integrator instead of a physics engine
+- how it survives real fingers. Grabs, throws, haptics, and what happens
+  when the user interrupts a beat halfway through
+- how single scenes get cut into a sequence like the clip above
+- the traps. Each one named, each one with the fix that actually works
+
+The writing is opinionated because the alternatives were tried and looked
+worse on screen.
 
 ## Install
 
 Claude Code: copy the `scenekit-product-stages` folder into
-`~/.claude/skills/` so the file lives at
-`~/.claude/skills/scenekit-product-stages/SKILL.md`. Claude Code discovers
-it automatically; the references directory is loaded on demand as the task
-requires.
+`~/.claude/skills/`, so the file lands at
+`~/.claude/skills/scenekit-product-stages/SKILL.md`. That folder is the
+skill; everything else in this repo is for you, not the agent.
 
-Claude.ai: zip the `scenekit-product-stages` folder and upload it via
+Claude.ai: zip the `scenekit-product-stages` folder and upload it under
 Settings > Capabilities > Skills.
+
+Then ask for something concrete. "A coin that drops onto the table, bounces
+twice and settles" is a better first prompt than "add 3D".
 
 ## Testing
 
-`evals.md` contains manual test scenarios: positive triggers, a paraphrased
-trigger, and negative triggers that must not load the skill. Run each in a
-fresh Claude Code session with the skill installed.
+`evals.md` has the scenarios I use to check the skill triggers when it
+should and stays quiet when it shouldn't. Run them in a fresh session.
 
 ## License
 
-MIT. See LICENSE; the skill frontmatter declares the same license. Swap it
-for your preferred license before publishing if MIT does not fit.
+MIT. Take it, ship things with it.
