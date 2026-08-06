@@ -8,7 +8,7 @@ Make one 3D object perform in your SwiftUI app.
 ![Platform](https://img.shields.io/badge/platform-iOS-blue)
 ![Version](https://img.shields.io/badge/version-1.6.2-green)
 
-[![PropMotion demo reel](media/skill-demo-poster.png)](media/skill-demo.mp4)
+https://github.com/dembsky/PropMotion/raw/main/media/skill-demo.mp4
 
 Four actors, one continuous take, everything built and animated with the
 skill's recipes: roll-in entrances, an interactive grab-and-throw, a
