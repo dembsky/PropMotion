@@ -1,10 +1,10 @@
 ---
 name: scenekit-product-stages
-description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, or choreographed 3D motion that must stay interruptible. Not for RealityKit, ARKit, visionOS, or full game worlds.
+description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
 license: MIT
 metadata:
   author: Mateusz Dembek
-  version: 1.6.2
+  version: 1.7.0
 ---
 
 # PropMotion
@@ -108,6 +108,9 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
 | Toggling `castsShadow` pops a blurred penumbra in one frame; `shadowBias` and the light's `categoryBitMask` are ignored for forward directional shadows | Keep `castsShadow` on permanently and animate `shadowColor` alpha, synchronized with the motion. |
 | A fixed warm-up delay still hitches on cold devices and the Simulator; a particle effect's first frame compiles its own pipeline and drops exactly when it fires | Two-key ignition: gate the entrance on the minimum delay AND `prepare`'s completion handler. Warm particle pipelines with a zero-opacity burst matching the real effect's flags. |
 | The default `UIGraphicsImageRenderer` format inherits screen scale, inflating every generated texture 9x in pixels - deadly for textures re-rendered live (per-keystroke engraving) | Pin the renderer format's scale to 1 and size the canvas to the actor's on-screen projection; coalesce multi-input retargets to one render per update pass. |
+| Reproducing a real object's motion from photos yields confident rigs that fail sideways - each fix reveals a new wrong | Stills carry poses, not paths or mechanisms; end-pose fits do not determine the trajectory. Model the path: a calibration rig with direct pose controls, the owner authoring keyframes against the physical object. |
+| A keyframed motion stutters rhythmically at its keyframes and survives every rendering and timing fix | The jerks are baked into the curve: the uniform Catmull-Rom basis on unevenly spaced keyframes steps velocity at every knot. Interpolate with span-weighted Hermite tangents (or a natural cubic) over distance-based phases, and gate on a numeric continuity check. |
+| A sub-mesh cut from a larger model measures as if it were the whole object, with no error anywhere | The cut trimmed only the index buffer; the vertex buffer still holds every vertex of the original. Measure only vertices referenced by the submesh indices. |
 | A square image assigned to `scene.lightingEnvironment` is silently ignored - zero reflections, every mirror material renders black, no console output | Paint the environment map in a recognized cube-map layout, easiest a 2:1 spherical canvas (1024x512). Only `material.reflective` accepts a square sphere map. |
 
 ## Reference map
@@ -135,6 +138,13 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   along floor paths (steering, screen-space staging, debug trails), channels
   beyond transforms (morpher weights, lens values, shader uniforms), springs
   as authoring material, one property one owner.
+- [references/motion-from-reference.md](references/motion-from-reference.md):
+  reproducing a real object's motion - what stills and video can and cannot
+  tell you, modeling the path instead of the mechanism, the calibration rig
+  (the owner poses the actor and saves keyframes), distance parametrization
+  and span-weighted interpolation of hand-saved poses, the uniform
+  Catmull-Rom trap, numeric continuity gates, seamless cosine state loops
+  with exits from the current phase, measuring trimmed sub-meshes.
 - [references/physics-without-engine.md](references/physics-without-engine.md):
   the hand-rolled fixed-step integrator baked to keyframes, walls and floor as
   plain numbers, contact-driven haptics, a rim-pivot topple, and why this
@@ -206,6 +216,16 @@ Before shipping a stage, verify:
       haptics. Every seam is classified: design seams are C1, impulse seams
       occur only at contact events and each lands a cue.
 - [ ] Rolling objects slave spin to distance divided by radius; nothing slides.
+- [ ] Motion copied from a real object is authored as keyframes through a
+      calibration rig (direct pose controls, saved poses, the owner's eye),
+      never as a mechanism inferred from photographs.
+- [ ] Hand-authored keyframes are parametrized by pose-space distance and
+      interpolated with span-weighted tangents (or a natural cubic); a dense
+      sampling passes a numeric max-acceleration-step check before the bake.
+- [ ] Looping states drive their phase with a cosine over the state's actual
+      sweep range (start equals end, zero-velocity reversals) and repeat via
+      the engine; exits read the current phase from the animation clock and
+      leave along the same path with duration scaled by remaining travel.
 - [ ] Eases on paths that enter or leave the frame keep a nonzero arc-rate
       at both edges of the VISIBLE window; a path appended to a resting
       actor starts with its tangent dead on the actor's roll axis (actor
