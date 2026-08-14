@@ -1,10 +1,10 @@
 ---
 name: scenekit-product-stages
-description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
+description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, a continuous vapor stream (vent air, steam, mist) drawn as a shader-driven sheet, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
 license: MIT
 metadata:
   author: Mateusz Dembek
-  version: 1.7.0
+  version: 1.8.0
 ---
 
 # PropMotion
@@ -112,6 +112,9 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
 | A keyframed motion stutters rhythmically at its keyframes and survives every rendering and timing fix | The jerks are baked into the curve: the uniform Catmull-Rom basis on unevenly spaced keyframes steps velocity at every knot. Interpolate with span-weighted Hermite tangents (or a natural cubic) over distance-based phases, and gate on a numeric continuity check. |
 | A sub-mesh cut from a larger model measures as if it were the whole object, with no error anywhere | The cut trimmed only the index buffer; the vertex buffer still holds every vertex of the original. Measure only vertices referenced by the submesh indices. |
 | A square image assigned to `scene.lightingEnvironment` is silently ignored - zero reflections, every mirror material renders black, no console output | Paint the environment map in a recognized cube-map layout, easiest a 2:1 spherical canvas (1024x512). Only `material.reflective` accepts a square sphere map. |
+| A scene animated only by the shader clock draws one frame and freezes; two screenshots seconds apart are pixel-identical | The on-demand render loop cannot see shader time: set `rendersContinuously = true`, and verify motion with a pixel-diff, never by eye. |
+| A speed dial on a shader-time pattern teleports the pattern when snapped - and tweening the dial makes the stream visibly race, or flow BACKWARD when slowing | Phase must be the integral of speed, never `speed * absoluteTime`: accumulate a clock in the renderer delegate, ease the speed toward its target, and let the clock only advance. |
+| A translucent sheet waved by a geometry modifier prints a bright hairline along every fold silhouette; banded grazing fades either keep the razor or paint straight dark stripes | Modifiers move vertices, not normals: tilt the normal by the wave's analytic slope, then scale alpha by thickness compensation `(1+k)*facing/(facing+k)` - smooth, zero at tangency, face-on fog untouched. |
 
 ## Reference map
 
@@ -177,6 +180,14 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   instead of physics, parabolas solved backward from the landing spot,
   tumble blended to a rest pose, seeded randomness, stagger by
   scheduling, budget notes.
+- [references/fog-and-mist-sheets.md](references/fog-and-mist-sheets.md):
+  a continuous vapor stream (vent air, steam, mist) as ONE translucent
+  sheet - geometry-modifier wave plus fragment-modifier fog, domain-warped
+  noise vs stripes, quintic fades vs Mach bands, jittered envelopes,
+  downstream brightness for direction, the integrated phase clock that
+  survives a speed dial, wave-tilted normals and thickness compensation
+  for fold silhouettes, camera-relative dial envelopes, measuring flow
+  direction by profile correlation.
 - [references/multi-actor-physics.md](references/multi-actor-physics.md):
   several actors in one baked simulation - N state vectors on one clock,
   pairwise collisions (separate, then exchange when approaching), the
@@ -265,3 +276,20 @@ Before shipping a stage, verify:
       per-rig flat color, and their emitter shapes never intersect the actor.
 - [ ] Haptic generators are prepared and reused per style, never built
       inline inside scheduled closures.
+- [ ] Any stage animated only by the shader clock sets
+      `rendersContinuously`; motion is verified by pixel-diffing two
+      captures, direction/pace claims by frame-to-frame profile
+      correlation, not by eye.
+- [ ] Every speed-driven shader pattern advances by an accumulated clock
+      (integral of speed), never by `speed * absoluteTime`; the speed
+      eases toward its target and the clock only moves forward.
+- [ ] View-angle fades on deformed sheets read wave-tilted normals (the
+      modifier updates `_geometry.normal`, not just position), and fold
+      silhouettes are handled by thickness compensation, not a banded
+      softstep with a floor.
+- [ ] Each motion channel owns its envelope: a calm or taper on one
+      channel (the wave) never rides a ramp another channel (a swing
+      bend) depends on.
+- [ ] A ported effect's dials are re-blocked for the new camera in screen
+      space first; every envelope-coupled constant is re-derived from the
+      new visible run before detail tuning.

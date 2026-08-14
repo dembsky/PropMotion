@@ -341,6 +341,28 @@ GPU. The traps are all in how values get in:
   draw. A material that gains its modifier mid-performance hitches exactly
   like a cold particle system; warm it with the rest of the scene
   ([first-frame-and-warmup.md](first-frame-and-warmup.md)).
+- The documentation's snippets are GLSL; on iOS the modifier compiles as
+  Metal, where the GLSL symbol names do not exist. Time is
+  `scn_frame.time`, frame-level transforms live on `scn_frame`
+  (`projectionTransform`, `viewTransform`, ...), per-node transforms on
+  `scn_node`. Write `u_time` and the whole material silently falls back
+  to magenta.
+- Helper functions go BEFORE `#pragma arguments`. Everything between that
+  pragma and `#pragma body` is parsed as argument declarations; a function
+  placed there is shredded into garbage argument types
+  (`C3DBaseTypeFromMetalString: unknown type name 'return'` warnings) and
+  the compile fails.
+- A magenta actor IS a modifier compile error. The full Metal error, with
+  the generated source, prints to the app's log - on the Simulator,
+  `xcrun simctl spawn <udid> log show --predicate 'process == "YourApp"'`
+  and search for `FATAL ERROR : failed compiling shader`.
+- A scene whose only motion lives in the shader clock never schedules a
+  second frame: the on-demand render loop cannot see shader time, so the
+  effect draws once and freezes. Set `rendersContinuously = true` on the
+  view, and prove motion with a pixel-diff of two screenshots, not by
+  eye. For streams and flows driven by a speed dial, see
+  [fog-and-mist-sheets.md](fog-and-mist-sheets.md) - the phase-clock trap
+  there bites any speed-varying shader pattern, not just fog.
 
 ## The stage must keep its identity
 
