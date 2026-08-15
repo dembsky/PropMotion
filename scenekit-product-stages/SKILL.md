@@ -1,6 +1,6 @@
 ---
 name: scenekit-product-stages
-description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, a continuous vapor stream (vent air, steam, mist) drawn as a shader-driven sheet, a liquid-metal or jelly blob (noise-deformed surface with mirror reflections and tap ripples), chrome or gold that looks cartoon-flat instead of real, HDRI image-based lighting, free trackball rotation of an actor, deterministic screenshot testing of shader-driven scenes, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
+description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, a continuous vapor stream (vent air, steam, mist) drawn as a shader-driven sheet, a liquid-metal or jelly blob (noise-deformed surface with mirror reflections and tap ripples), chrome or gold that looks cartoon-flat instead of real, HDRI image-based lighting, free trackball rotation of an actor, deterministic screenshot testing of shader-driven scenes, cutting an actor in two with a finger swipe (runtime mesh slicing with sealed cross-sections and a falling piece), a die-struck relief object (badge, coin, medallion) built from a heightfield with multiple finishes on one mesh, an actor crumbling into debris that falls and rests on the floor, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
 license: MIT
 metadata:
   author: Mateusz Dembek
@@ -120,6 +120,9 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
 | A full `clearCoat` on a white dielectric turns pearl into chrome with a white core; two finishes collapse into one look | `clearCoat` is a mirror layer. Pearl wants ~0.3-0.4 with roughness ~0.2 - gloss over cream, not silver. |
 | A tap on a shader-deformed actor misses exactly on the bulges - `hitTest` sees only the undisplaced mesh | Give the actor an oversized invisible collider (`colorBufferWriteMask = []`), hit-test with `.all`, filter by node name. |
 | Frozen-clock snapshots that should be identical diff nonzero with no visible difference | Adaptive exposure renders the same instant differently depending on scene history: `wantsExposureAdaptation = false`, fix exposure by hand. |
+| Particle debris slides forever or never comes to rest, and every friction tweak makes it worse | `particleFriction` is INVERTED from physical intuition: 1.0 slides freely, 0.0 sticks. A low value (~0.25) is what parks a grain after its last hop. |
+| A surface a mechanic creates at runtime (a cut face, a toppled underside) renders near-black while the rest of the actor looks fine | Faces standing nearly parallel to the view axis graze off the key and the shadow sun. Give the scene a real ambient floor and judge lighting in EVERY orientation the mechanic can produce, not just the authored pose. |
+| A stage is silently empty - no errors, no scene, nothing to debug | A narrowing init (`Int32(...)`) after 64-bit hash arithmetic traps at runtime, and inside an async task the crash is invisible. Do hash math in the target width via `truncatingIfNeeded`, and check the system crash reports before debugging scene logic. |
 
 ## Reference map
 
@@ -157,6 +160,21 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   the hand-rolled fixed-step integrator baked to keyframes, walls and floor as
   plain numbers, contact-driven haptics, a rim-pivot topple, and why this
   beats SCNPhysics for choreographed scenes.
+- [references/mesh-surgery.md](references/mesh-surgery.md): cutting an
+  actor apart at runtime - the mesh as plain arrays, a swipe lifted into
+  a cut plane through the camera, triangle clipping into two SEALED
+  halves, the convexity argument that makes the cap trivial, planar cap
+  UVs serving one radial artwork, closed-mesh volume and center-of-mass
+  integrals deciding which piece falls, the support-point fall integrator
+  for an arbitrary chunk, hold-to-aim commit-on-release, scripted cuts
+  that survive re-slicing.
+- [references/relief-actors.md](references/relief-actors.md): die-struck
+  relief objects from CPU heightfields - height and class map painted
+  together (several finishes on one mesh), parabolic feature profiles,
+  the silhouette's three simultaneous guarantees, normals from a blurrier
+  copy of the field, judging flat mirrors front-on and frozen, the
+  narrowing-init hash trap, naming the raster ceiling before polishing
+  toward offline renders.
 - [references/gestures-and-haptics.md](references/gestures-and-haptics.md):
   pan-to-grab without hit testing, the trackball (screen axes lifted to
   world space through the camera, quaternion composed over authored
@@ -187,7 +205,9 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   dozens of actors at once - one geometry for the swarm, slot-based piles
   instead of physics, parabolas solved backward from the landing spot,
   tumble blended to a rest pose, seeded randomness, stagger by
-  scheduling, budget notes.
+  scheduling, destruction bursts (the one place engine particles beat
+  baking, and the determinism exemption that comes with them), budget
+  notes.
 - [references/fog-and-mist-sheets.md](references/fog-and-mist-sheets.md):
   a continuous vapor stream (vent air, steam, mist) as ONE translucent
   sheet - geometry-modifier wave plus fragment-modifier fog, domain-warped
@@ -206,8 +226,10 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   `.hdr` HDRIs by file URL (the UIImage clamp trap), `wantsHDR` with
   bloom thresholds above 1.0, exposure adaptation vs snapshots, rotating
   the camera rig because the environment cannot rotate, clearcoat and
-  dark-finish notes, light themes needing dark furniture, CC0 sourcing
-  and bundling.
+  dark-finish notes, light themes needing dark furniture, purpose-built
+  environments for flat mirrors (finite gaussian cards, never
+  full-sphere rings), classifying the three kinds of lines on chrome,
+  CC0 sourcing and bundling.
 - [references/deformable-surfaces.md](references/deformable-surfaces.md):
   a closed surface that breathes - fbm displacement on the unit
   direction, the octave budget separating liquid from rock,
@@ -335,4 +357,12 @@ Before shipping a stage, verify:
       inertia - rides one dt-integrated clock with a freeze launch hook;
       exposure adaptation is off; determinism is proven by bit-identical
       frozen screenshots across launches, and interaction by a
-      frozen-clock diff bounded to the actor.
+      frozen-clock diff bounded to the actor. A stage that hands motion
+      to the engine's particle simulation declares its exemption in a
+      comment and proves itself by motion pixel-diff instead.
+- [ ] Lighting is verified in every orientation the stage's mechanics
+      can produce (cut faces, toppled undersides, mid-tumble poses) -
+      not only the authored resting pose.
+- [ ] Linework in generated textures (stripes, bands, outlines) is drawn
+      as filled vector paths, never as stacks of per-row rectangles -
+      row stacks print staircase edges at any resolution.

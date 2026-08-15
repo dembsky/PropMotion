@@ -14,6 +14,7 @@ change.
 - Landings are events, not freeze-frames
 - Seeded randomness or nothing
 - Stagger by scheduling, not by keyframe padding
+- Destruction bursts: when the engine's particles win
 - Budget notes
 
 ## One geometry, N transforms
@@ -90,6 +91,58 @@ delay (~50 ms apart), not by padding every keyframe array with hold
 frames. Forty scheduled closures are trivial; forty arrays with variable
 prefixes are a bug farm. Haptics: tick every FOURTH landing - forty
 impacts read as a buzz.
+
+## Destruction bursts: when the engine's particles win
+
+This skill argues against `SCNPhysicsBody` for choreographed actors, and
+that stands. But an actor CRUMBLING into hundreds of grains that fall,
+bounce, and rest on the floor is the honest exception: at N in the
+hundreds, node swarms and baked keyframes stop being economical, and a
+one-shot `SCNParticleSystem` with real collisions is the right tool.
+
+```swift
+let system = SCNParticleSystem()
+system.loops = false
+system.emissionDuration = 0.06
+system.birthRate = 11_000            // one flash ~ birthRate x duration
+system.emitterShape = SCNSphere(radius: actorRadius * 0.96)
+system.birthLocation = .volume       // born THROUGHOUT the actor
+system.birthDirection = .surfaceNormal
+system.particleVelocity = 1.15       // the burst must actually disperse
+system.isAffectedByGravity = true
+system.colliderNodes = [floorNode]
+system.particleDiesOnCollision = false
+system.particleBounce = 0.28
+system.particleFriction = 0.25       // INVERTED dial - see below
+```
+
+The knobs that are not what they look like:
+
+- `particleFriction` is inverted from physical intuition: 1.0 slides
+  freely, 0.0 sticks dead. A LOW value (~0.25) is what brings a grain to
+  rest after its last hop. Exactly the kind of dial to look up, never
+  guess.
+- Particles never collide with EACH OTHER, so a timid launch velocity
+  keeps the actor's shape all the way down and it lands as one puddle.
+  A real crumble needs enough outward push (plus variation and spread)
+  to scatter its grit across the floor.
+- Debris legibility: a hard-silhouette sprite (an irregular chunk with a
+  lit face and a shadow face) reads as MATTER; a soft radial disc reads
+  as snow regardless of physics. Spin via angular velocity sells
+  tumbling shards. House rules from the stage still apply: matte, unlit,
+  alpha-blended, distance-sorted, dying by fade - and tiny against the
+  actor; realism is scale and death, not volume.
+- Hide the actor the same frame the burst starts; warm the particle
+  pipeline at install with the zero-opacity trick from
+  [first-frame-and-warmup.md](first-frame-and-warmup.md).
+
+The price, stated openly: the engine's particle simulation is NOT
+seedable, so a destruction stage is exempt from the bit-identical
+frozen-snapshot contract of
+[rendering-contract.md](rendering-contract.md). It proves itself by a
+motion pixel-diff between two captures, never by frame equality - write
+that into the stage's comment so the exemption is a decision, not a
+surprise.
 
 ## Budget notes
 

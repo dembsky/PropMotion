@@ -14,6 +14,8 @@ better painting.
 - Rotating an environment that cannot rotate
 - Finish notes: clearcoat, pearl, black metal
 - A light theme needs dark furniture
+- Environments for flat mirrors: finite cards, not rings
+- Three kinds of lines on a mirror
 - Sourcing and bundling
 
 ## Cartoon metal: the LDR ceiling
@@ -129,6 +131,49 @@ hard cut; let the SwiftUI backdrop animate the transition around it):
 scene.lightingEnvironment.contents = environments[theme]
 scene.lightingEnvironment.intensity = theme == .dark ? 1.0 : 0.9
 ```
+
+## Environments for flat mirrors: finite cards, not rings
+
+A photographic studio HDRI is right for curved product metal - and wrong
+for a BROAD, NEARLY FLAT mirror face (a polished badge, a chromed
+plaque). A flat surface reflects one small zone of the environment, so
+the photograph's clutter reads as smudges and its single softbox as one
+flat white sheet. That look wants a PURPOSE-BUILT environment, and two
+rules decide whether it works:
+
+- Chrome = environment contrast x surface curvature; both must exist.
+  Paint the environment as a handful (5-7) of WIDE, SOFT gradient bands
+  with genuinely hot HDR peaks and genuinely dark valleys, and give the
+  surface full doming - a flat plateau reflects one value no matter how
+  good the map is (see [relief-actors.md](relief-actors.md)).
+- Build light sources as a constellation of FINITE two-axis gaussian
+  cards, never as bands that wrap the whole sphere of directions. A
+  wrapped ring is intersected periodically by the normals of any curved
+  edge seen from any angle, printing transverse zebra stripes across
+  rims and tubes; a finite card is entered and left once, like a real
+  softbox.
+
+Author the map as float data (a small `.hdr` you generate, or a float
+texture) so the hot cards genuinely exceed 1.0 - painting the same
+layout through an 8-bit context lands you back at the cartoon-metal
+ceiling above. A light theme is the same layout inverted: dark bands on
+white with one hot line for the sparkle.
+
+## Three kinds of lines on a mirror
+
+"There are lines on the chrome" is three DIFFERENT bugs. Classify first,
+because each class has its own fix and fixing the wrong one changes
+nothing:
+
+| Line pattern | Cause | Fix |
+| --- | --- | --- |
+| Contour terraces following the shape, like elevation lines | Height quantization printed by normals - a mirror amplifies every stair in the field | Derive normals from a more blurred copy of the heightfield; keep positions sharp |
+| Dense grooves along the reflection, like vinyl | A NARROW hot line in the environment, stretched by surface curvature into a smeared streak | Widen the band; keep at most one narrow sparkle line |
+| Periodic transverse stripes on rims and tubes, from every viewing angle | Environment bands wrapping the full sphere of directions - curved normals cross them cyclically | Rebuild sources as finite gaussian cards (previous section) |
+
+Judge from at least two angles (front-on and a side view), on frozen
+frames - a deterministic side-view launch hook pays for itself here. A
+spinning turntable hides all three classes behind shimmer.
 
 ## Sourcing and bundling
 
