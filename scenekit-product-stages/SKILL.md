@@ -1,10 +1,10 @@
 ---
 name: scenekit-product-stages
-description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, a continuous vapor stream (vent air, steam, mist) drawn as a shader-driven sheet, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
+description: Build and debug SceneKit scenes where one 3D object (a product, badge, coin, wheel) performs on a transparent stage inside a SwiftUI app - studio lighting, real shadows, baked keyframe choreography, hand-rolled physics, gestures and haptics, multi-scene sequencing. Use when working with SCNView or SceneView in SwiftUI, UIViewRepresentable 3D scenes, product or hero-object animation, roll or spin entrances, a first-frame hitch when a scene appears, shadows missing or wrong, metal rendering black, choreographed 3D motion that must stay interruptible, a continuous vapor stream (vent air, steam, mist) drawn as a shader-driven sheet, a liquid-metal or jelly blob (noise-deformed surface with mirror reflections and tap ripples), chrome or gold that looks cartoon-flat instead of real, HDRI image-based lighting, free trackball rotation of an actor, deterministic screenshot testing of shader-driven scenes, reproducing a real object's motion from photos or video, or keyframed motion that stutters at its own keyframes. Not for RealityKit, ARKit, visionOS, or full game worlds.
 license: MIT
 metadata:
   author: Mateusz Dembek
-  version: 1.8.0
+  version: 1.9.0
 ---
 
 # PropMotion
@@ -115,6 +115,11 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
 | A scene animated only by the shader clock draws one frame and freezes; two screenshots seconds apart are pixel-identical | The on-demand render loop cannot see shader time: set `rendersContinuously = true`, and verify motion with a pixel-diff, never by eye. |
 | A speed dial on a shader-time pattern teleports the pattern when snapped - and tweening the dial makes the stream visibly race, or flow BACKWARD when slowing | Phase must be the integral of speed, never `speed * absoluteTime`: accumulate a clock in the renderer delegate, ease the speed toward its target, and let the clock only advance. |
 | A translucent sheet waved by a geometry modifier prints a bright hairline along every fold silhouette; banded grazing fades either keep the razor or paint straight dark stripes | Modifiers move vertices, not normals: tilt the normal by the wave's analytic slope, then scale alpha by thickness compensation `(1+k)*facing/(facing+k)` - smooth, zero at tangency, face-on fog untouched. |
+| Chrome lit by a hand-painted environment renders as cartoon metal: one flat paper-white highlight with a hard edge, reflections posterized into gray bands | The painted map's ceiling is 1.0 - there is no dynamic range to roll off. Use a photographic `.hdr` HDRI passed as a FILE URL (a `UIImage` re-encode silently clamps it back to LDR) plus `wantsHDR` on the camera. |
+| `lightingEnvironment` has no orientation control, and the panorama's frontal lamp prints one big blob dead ahead in the reflection | Rotate the CAMERA RIG instead: with a symmetric actor and radial floor the framing is identical, only the reflection layout moves. Build screen-space gestures rig-aware (lift axes through `pointOfView`). |
+| A full `clearCoat` on a white dielectric turns pearl into chrome with a white core; two finishes collapse into one look | `clearCoat` is a mirror layer. Pearl wants ~0.3-0.4 with roughness ~0.2 - gloss over cream, not silver. |
+| A tap on a shader-deformed actor misses exactly on the bulges - `hitTest` sees only the undisplaced mesh | Give the actor an oversized invisible collider (`colorBufferWriteMask = []`), hit-test with `.all`, filter by node name. |
+| Frozen-clock snapshots that should be identical diff nonzero with no visible difference | Adaptive exposure renders the same instant differently depending on scene history: `wantsExposureAdaptation = false`, fix exposure by hand. |
 
 ## Reference map
 
@@ -153,11 +158,14 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   plain numbers, contact-driven haptics, a rim-pivot topple, and why this
   beats SCNPhysics for choreographed scenes.
 - [references/gestures-and-haptics.md](references/gestures-and-haptics.md):
-  pan-to-grab without hit testing, soft clamps while held, release velocity,
-  impact haptics, scripted beats surviving live fingers (bounded retries,
-  tokened polls, hidden-actor gesture guards, steal closes the hold
-  contract), Reduce Motion as a taxonomy, VoiceOver access to an invisible
-  stage, coexisting with SwiftUI gestures.
+  pan-to-grab without hit testing, the trackball (screen axes lifted to
+  world space through the camera, quaternion composed over authored
+  motion, flick inertia on the stage clock, tap/pan coexistence), soft
+  clamps while held, release velocity, impact haptics, scripted beats
+  surviving live fingers (bounded retries, tokened polls, hidden-actor
+  gesture guards, steal closes the hold contract), Reduce Motion as a
+  taxonomy, VoiceOver access to an invisible stage, coexisting with
+  SwiftUI gestures.
 - [references/sequencing-stages.md](references/sequencing-stages.md):
   directing several stages as one film - a master clock with beats as
   data, wall-time drift traps, cuts on motion after the exit clears,
@@ -193,6 +201,28 @@ Full detail with code: [references/stage-recipe.md](references/stage-recipe.md)
   pairwise collisions (separate, then exchange when approaching), the
   freeze-the-world grab, hit-testing which actor the finger picked,
   per-actor contact lists for squash and haptics.
+- [references/hdr-environments.md](references/hdr-environments.md):
+  believable metal - the LDR ceiling behind cartoon highlights, real
+  `.hdr` HDRIs by file URL (the UIImage clamp trap), `wantsHDR` with
+  bloom thresholds above 1.0, exposure adaptation vs snapshots, rotating
+  the camera rig because the environment cannot rotate, clearcoat and
+  dark-finish notes, light themes needing dark furniture, CC0 sourcing
+  and bundling.
+- [references/deformable-surfaces.md](references/deformable-surfaces.md):
+  a closed surface that breathes - fbm displacement on the unit
+  direction, the octave budget separating liquid from rock,
+  finite-difference normal reconstruction (mirror finishes die without
+  it), tap ripples as float4 uniform slots with a travelling front, mesh
+  density vs ring wavelength, the oversized invisible tap collider,
+  amplitude as an animatable KVC dial.
+- [references/rendering-contract.md](references/rendering-contract.md):
+  the deterministic stage - one injectable dt-integrated clock owning
+  shader uniforms, node poses, and gesture inertia; the freeze launch
+  hook and back-dated events; the determinism checklist (exposure
+  adaptation, wall clocks, Reduce Motion as pause); the proof kit
+  (motion diff, bit-identical frozen pairs, frozen-clock interaction
+  diff); synthetic CGEvent gestures and their traps (stale window
+  frames, the human in the loop).
 
 ## Review checklist
 
@@ -293,3 +323,16 @@ Before shipping a stage, verify:
 - [ ] A ported effect's dials are re-blocked for the new camera in screen
       space first; every envelope-coupled constant is re-derived from the
       new visible run before detail tuning.
+- [ ] Mirror-finish actors are lit by a photographic `.hdr` environment
+      passed as a file URL, with `wantsHDR` on the camera and bloom
+      thresholded above 1.0; nothing hand-painted in LDR feeds a chrome
+      or gold material.
+- [ ] Shader-deformed geometry rebuilds `_geometry.normal` from the
+      deformation (finite differences for composite displacement), and
+      taps are hit-tested against an oversized invisible collider, not
+      the base mesh.
+- [ ] Every motion source - shader uniforms, node poses, gesture
+      inertia - rides one dt-integrated clock with a freeze launch hook;
+      exposure adaptation is off; determinism is proven by bit-identical
+      frozen screenshots across launches, and interaction by a
+      frozen-clock diff bounded to the actor.

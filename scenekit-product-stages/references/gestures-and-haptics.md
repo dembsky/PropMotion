@@ -3,6 +3,7 @@
 ## Contents
 
 - Screen-to-world without hit testing
+- The trackball: tumble in any direction
 - The grab protocol
 - Soft clamps while held
 - Release velocity
@@ -42,6 +43,56 @@ The same closed-form thinking applies to stage limits: derive the lift
 ceiling by solving where the view's top edge intersects the actor's plane
 given the camera position, pitch, and FOV. A linear estimate clips the actor
 on some screens; the exact projection never does.
+
+## The trackball: tumble in any direction
+
+Free rotation - grab the actor and turn it whichever way the finger
+moves - is one quaternion per drag step, not an euler pair. Drag right
+rotates about the camera's up axis, drag down about its right axis, a
+diagonal composes both:
+
+```swift
+// Points of drag (or points-per-second of flick) to a world-space axis.
+// ~0.008 rad/pt puts a full-screen swipe at roughly a half turn.
+private func dragRotation(dx: Float, dy: Float)
+    -> (axis: SIMD3<Float>, angle: Float)? {
+    let magnitude = sqrt(dx * dx + dy * dy)
+    guard magnitude > 0.001, let pov = view?.pointOfView else { return nil }
+    let axisCamera = SIMD3<Float>(dy, dx, 0) / magnitude
+    let axisWorld = pov.presentation.simdWorldOrientation.act(axisCamera)
+    return (axisWorld, magnitude * 0.008)
+}
+```
+
+The load-bearing choices:
+
+- The axis is built in SCREEN space and lifted to world space through the
+  camera's orientation. This absorbs any camera rig rotation for free -
+  including the environment-aiming yaw rig from
+  [hdr-environments.md](hdr-environments.md). Hardcoded world axes feel
+  right until the rig turns, then every drag tracks diagonally.
+- The user's rotation is its own quaternion, composed OVER the authored
+  motion: `node.simdOrientation = userQuat * authoredPose(clock)`. The
+  idle spin keeps breathing underneath, the user steers on top, and
+  neither owns the other's channel (one property, one owner - the
+  composition IS the ownership split).
+- Per-step increments multiply on the left (`userQuat = step * userQuat`,
+  re-normalized), so each drag rotates about the CURRENT screen axes -
+  trackball feel - rather than accumulating euler drift.
+- A flick hands `velocity(in:)` through the same mapping to the stage
+  clock as an angular velocity, integrated per frame on dt and decayed
+  exponentially (`omega *= exp(-dt / 0.9)`, dead below ~0.02 rad/s). Same
+  dt as everything else, so inertia feels identical at 60 and 120 Hz
+  ([rendering-contract.md](rendering-contract.md)).
+- A new grab (`.began`) zeroes the flick velocity first - catching a
+  spinning actor should stop it dead in the hand.
+- The render thread stays the single writer of the node's orientation:
+  the gesture only deposits increments and velocities under a lock.
+
+Tap and pan coexist without arbitration code: `UIPanGestureRecognizer`
+claims the touch only after its movement threshold (~10 pt), so a
+motionless touch falls through as a tap. A poke-the-surface tap and a
+tumble drag on the same view need no exclusivity dance.
 
 ## The grab protocol
 
