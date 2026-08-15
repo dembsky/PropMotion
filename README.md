@@ -6,7 +6,7 @@ A Claude Code skill for making 3D objects move well in SwiftUI apps.
 ![Claude Code](https://img.shields.io/badge/Claude%20Code-agent%20skill-d97757)
 ![Swift](https://img.shields.io/badge/Swift-SwiftUI%20%2B%20SceneKit-F05138?logo=swift&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-iOS-blue)
-![Version](https://img.shields.io/badge/version-1.6.2-green)
+![Version](https://img.shields.io/badge/version-1.9.0-green)
 
 <p align="center">
   <img src="media/skill-demo.gif" width="360" alt="PropMotion demo reel" />
@@ -35,6 +35,13 @@ written for an agent.
   and a shiver
 - coins raining into a pile, marbles colliding, a wheel doing a burnout
   with smoke
+- a fruit you slice with a finger swipe: the cut face seals itself and
+  the smaller piece tumbles to the floor
+- a molten-metal blob that breathes and ripples where you tap it, lit by
+  a real HDR studio so the chrome actually reads as chrome
+- a stamped medallion with metal ridges and enamel cells on one mesh, or
+  a sphere that crumbles into grit and rests on the floor
+- a stream of vapor out of a vent, drawn as one shader-driven sheet
 - several scenes cut into one continuous clip, like the one above
 
 All geometry from primitives in code, all motion baked keyframes with
@@ -67,15 +74,17 @@ usually settles whether the problem is the trajectory or the staging.
 
 ## What's inside
 
-One SKILL.md the agent reads first, and ten reference files it pulls in
-when the task calls for them. Roughly:
+One SKILL.md the agent reads first, and eighteen reference files it
+pulls in when the task calls for them. Roughly:
 
 - how a stage is built. Transparent SCNView over your SwiftUI layout,
   a camera that behaves, three lights and a separate shadow rig
 - how motion is designed. Cue sheets before code, baked keyframes instead
   of timers, a tiny integrator instead of a physics engine
-- how it survives real fingers. Grabs, throws, haptics, and what happens
-  when the user interrupts a beat halfway through
+- how it survives real fingers. Grabs, throws, trackball spins, haptics,
+  and what happens when the user interrupts a beat halfway through
+- how materials get real. HDR studios for chrome, shader-deformed
+  surfaces, relief built from heightfields, meshes cut apart at runtime
 - how single scenes get cut into a sequence like the clip above
 - the traps. Each one named, each one with the fix that actually works
 
